@@ -75,5 +75,3 @@ class LTS:
 
                 reached_states.update([(x, current_length + 1) for x in self.__get_reachable_states__(new_states)])
         return False
-
-def ReX2LTS
