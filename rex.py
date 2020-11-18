@@ -37,13 +37,17 @@ class Union(ReX):
         return self.leftRex.accepts(string) or self.rightRex.accepts(string)
 
 
-class Concatenation(Union):
+class Concatenation(ReX):
+    def __init__(self, leftRex: ReX, rightRex: ReX):
+        self.leftRex = leftRex
+        self.rightRex = rightRex
+
     def __str__(self) -> str:
         return f"{self.leftRex},{self.rightRex}"
 
     def accepts(self, string: str) -> bool:
         for leftPartSize in range(len(string) + 1):
-            leftString, rightString = str[:leftPartSize], str[leftPartSize:]
+            leftString, rightString = string[:leftPartSize], string[leftPartSize:]
             if self.leftRex.accepts(leftString) and self.rightRex.accepts(rightString):
                 return True
         return False
@@ -57,8 +61,11 @@ class KleneeStar(ReX):
         return f"{self.rex}*"
 
     def accepts(self, string: str) -> bool:
+        if not string:
+            return True
+
         for leftPartSize in range(len(string) + 1):
-            leftString, rightString = str[:leftPartSize], str[leftPartSize:]
+            leftString, rightString = string[:leftPartSize], string[leftPartSize:]
             if self.rex.accepts(leftString) and self.accepts(rightString):
                 return True
         return False

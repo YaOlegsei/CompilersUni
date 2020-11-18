@@ -2,7 +2,7 @@ from typing import Set, Dict, List, Tuple, Sequence, Optional
 from collections import defaultdict
 
 
-class Transition:
+class LabelledTransition:
     def __init__(self,
                  from_state: int,
                  to_state: int,
@@ -18,21 +18,19 @@ class LTS:
                  start: int,
                  end: int,
                  states: Set[int],
-                 transitions: Set[Transition],
-                 tokens: Set[str],
+                 transitions: Set[LabelledTransition],
                  ):
         self.start = start
         self.end = end
-        # self.tokens = tokens
         self.states = states
         self.transitions = transitions
 
-        trans_dict: Dict[Tuple[int, str], List[Transition]] = defaultdict(list)
+        trans_dict: Dict[Tuple[int, str], List[LabelledTransition]] = defaultdict(list)
         for tr in transitions:
             trans_dict[(tr.from_state, tr.label)].append(tr)
         self.trans_from_lbl = dict(trans_dict)
 
-    def __get_suitable_transitions__(self, from_state: int, label: str) -> Optional[List[Transition]]:
+    def __get_suitable_transitions__(self, from_state: int, label: str) -> Optional[List[LabelledTransition]]:
         return self.trans_from_lbl.get((from_state, label))
 
     def __get_reachable_states__(self, states: List[int]) -> Set[int]:
