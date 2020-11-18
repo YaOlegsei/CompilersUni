@@ -60,13 +60,14 @@ class LTS:
 
         while reached_states:
             current_state, current_length = reached_states.pop()
-            current_label = chain[current_length]
 
             if current_length == expected_length and current_state == self.end:
                 return True
 
             if current_length >= expected_length:
                 continue
+
+            current_label = chain[current_length]
 
             to_transitions = self.__get_suitable_transitions__(current_state, current_label)
 
