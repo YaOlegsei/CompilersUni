@@ -26,6 +26,7 @@ class LTS:
         self.transitions = transitions
 
         trans_dict: Dict[Tuple[int, str], List[LabelledTransition]] = defaultdict(list)
+
         for tr in transitions:
             trans_dict[(tr.from_state, tr.label)].append(tr)
         self.trans_from_lbl = dict(trans_dict)
@@ -45,6 +46,10 @@ class LTS:
                 continue
             for transition in suitable_transitions:
                 # to prevent cycles
+                """
+                instead of directly comparing sets each iteration 
+                we verify if the new element already present in set
+                """
                 if transition.to_state not in result_set:
                     result_set.add(transition.to_state)
                     added.append(transition.to_state)
@@ -59,10 +64,9 @@ class LTS:
         while reached_states:
             current_state, current_length = reached_states.pop()
 
-            if current_length == expected_length and current_state == self.end:
-                return True
-
-            if current_length >= expected_length:
+            if current_length == expected_length:
+                if current_state == self.end:
+                    return True
                 continue
 
             current_label = chain[current_length]
