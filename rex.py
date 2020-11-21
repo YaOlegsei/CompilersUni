@@ -75,18 +75,17 @@ class Union(ReX):
                    transitions, )
 
 
-class Concatenation(ReX):
+class Concatenation(Union):
     def __init__(self, left_rex: ReX, right_rex: ReX):
-        self.leftRex = left_rex
-        self.rightRex = right_rex
+        super().__init__(left_rex, right_rex)
 
     def __str__(self) -> str:
-        return f"{self.leftRex},{self.rightRex}"
+        return f"{self.left_rex},{self.right_rex}"
 
     def accepts(self, string: str) -> bool:
         for left_part_size in range(len(string) + 1):
             left_string, right_string = string[:left_part_size], string[left_part_size:]
-            if self.leftRex.accepts(left_string) and self.rightRex.accepts(right_string):
+            if self.left_rex.accepts(left_string) and self.right_rex.accepts(right_string):
                 return True
         return False
 
@@ -94,8 +93,8 @@ class Concatenation(ReX):
         """
          ltsLeft.endState -> ltsRight.startState
         """
-        lts_left = self.leftRex.rex2lts(0)
-        lts_right = self.rightRex.rex2lts(first_state + len(lts_left.states))
+        lts_left = self.left_rex.rex2lts(0)
+        lts_right = self.right_rex.rex2lts(first_state + len(lts_left.states))
         start, end = lts_left.start, lts_right.end
         transitions = lts_left.transitions
 
