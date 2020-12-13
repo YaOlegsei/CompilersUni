@@ -68,7 +68,9 @@ class ContextFreeGrammar:
 
         for rule in available_rules:
             not_alive_symbols = list(
-                filter(lambda symb: isinstance(symb, NonTerminalSymbol) and symb not in alives, rule.right_symbols))
+                filter(lambda symb:
+                       isinstance(symb, NonTerminalSymbol) and symb not in alives,
+                       rule.right_symbols, ))
 
             if not not_alive_symbols:
                 new_alives.append(rule.left_symbol)
@@ -94,7 +96,7 @@ class ContextFreeGrammar:
                                   self.start_non_terminal,
                                   )
 
-    def __get_reachable_only_grammar(self) -> ContextFreeGrammar:
+    def __get_reachable_only_grammar__(self) -> ContextFreeGrammar:
         reachables: Set[NonTerminalSymbol] = {self.start_non_terminal}
 
         reachable_rules = self.rules_dict[self.start_non_terminal]
@@ -133,7 +135,28 @@ class ContextFreeGrammar:
     def remove_external_non_terminals(self):
         return ContextFreeGrammar \
             .__get_alive_only_grammar(self) \
-            .__get_reachable_only_grammar()
+            .__get_reachable_only_grammar__()
+
+    def __get_new_disappearing__(self, disappearing: Set[NonTerminalSymbol]) -> List[NonTerminalSymbol]:
+        new_disappearing: Set[NonTerminalSymbol] = set()
+        for rule in self.rules:
+            if rule.left_symbol in disappearing : continue
+            not_disappearing_symbols = list(filter(lambda symbol: symbol not in disappearing, rule.right_symbols))
+            if not not_disappearing_symbols: new_disappearing.add(rule.left_symbol)
+
+        return list(new_disappearing)
+
+    def detect_disappearing_non_terminals(self) -> List[NonTerminalSymbol]:
+        disappearing: Set[NonTerminalSymbol] = set()
+
+        while True:
+            new_disappearing = self.__get_new_disappearing__(disappearing)
+
+            if not new_disappearing: break
+
+            disappearing.update(new_disappearing)
+
+        return list(disappearing)
 
 
 if __name__ == "__main__":
@@ -143,5 +166,17 @@ if __name__ == "__main__":
         [GrammarRule(NonTerminalSymbol("A"), [TerminalSymbol("chr"), TerminalSymbol("ast")])],
         NonTerminalSymbol("A"),
     )
-    print(cfg)
-    print(cfg.remove_external_non_terminals())
+
+    cfg_non_terminals = ContextFreeGrammar(
+        [TerminalSymbol("chr"), TerminalSymbol("ast")],
+        [NonTerminalSymbol("A"), NonTerminalSymbol("B"), NonTerminalSymbol("S")],
+        [
+            GrammarRule(NonTerminalSymbol("S"), [NonTerminalSymbol("A"), NonTerminalSymbol("B")]),
+            GrammarRule(NonTerminalSymbol("A"), []),
+            GrammarRule(NonTerminalSymbol("B"), [])
+         ],
+        NonTerminalSymbol("S"),
+    )
+    print(cfg_non_terminals.detect_disappearing_non_terminals())
+    #print(cfg)
+    #print(cfg.remove_external_non_terminals())
