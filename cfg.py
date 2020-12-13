@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Set, Dict, List, Sequence
+from typing import Set, Dict, List, Sequence, Optional
 from collections import defaultdict
 
 
@@ -140,7 +140,7 @@ class ContextFreeGrammar:
     def __get_new_disappearing__(self, disappearing: Set[NonTerminalSymbol]) -> List[NonTerminalSymbol]:
         new_disappearing: Set[NonTerminalSymbol] = set()
         for rule in self.rules:
-            if rule.left_symbol in disappearing : continue
+            if rule.left_symbol in disappearing: continue
             not_disappearing_symbols = list(filter(lambda symbol: symbol not in disappearing, rule.right_symbols))
             if not not_disappearing_symbols: new_disappearing.add(rule.left_symbol)
 
@@ -158,6 +158,50 @@ class ContextFreeGrammar:
 
         return list(disappearing)
 
+    def __detect_if_in_cycle__(self, symb: NonTerminalSymbol) -> bool:
+
+        disappearing: List[NonTerminalSymbol] = self.detect_disappearing_non_terminals()
+
+        def find_most_left_non_terminals(rule: GrammarRule) -> List[NonTerminalSymbol]:
+            left_non_terminals: Set[NonTerminalSymbol] = set()
+            for symb in rule.right_symbols:
+                if symb in disappearing:
+                    left_non_terminals.add(symb)
+                    continue
+                if isinstance(symb, NonTerminalSymbol):
+                    left_non_terminals.add(symb)
+                break
+
+            return list(left_non_terminals)
+
+        enter_dict: Dict[NonTerminalSymbol, bool] = defaultdict(lambda: False)
+
+        def dfs(cur_symb: NonTerminalSymbol) -> Optional[NonTerminalSymbol]:
+
+            has_entered = enter_dict[cur_symb]
+            if has_entered: return cur_symb
+
+            enter_dict[cur_symb] = True
+
+            for rule in self.rules_dict[cur_symb]:
+                for next_symb in find_most_left_non_terminals(rule):
+                    if symb == dfs(next_symb):
+                        enter_dict[cur_symb] = False
+                        return symb
+
+            enter_dict[cur_symb] = False
+            return None
+
+        return dfs(symb) == symb
+
+    def detect_left_recursion(self) -> List[NonTerminalSymbol]:
+        return list(
+            filter(
+                lambda non_terminal: self.__detect_if_in_cycle__(non_terminal),
+                self.non_terminals,
+            )
+        )
+
 
 if __name__ == "__main__":
     cfg = ContextFreeGrammar(
@@ -174,9 +218,31 @@ if __name__ == "__main__":
             GrammarRule(NonTerminalSymbol("S"), [NonTerminalSymbol("A"), NonTerminalSymbol("B")]),
             GrammarRule(NonTerminalSymbol("A"), []),
             GrammarRule(NonTerminalSymbol("B"), [])
-         ],
+        ],
         NonTerminalSymbol("S"),
     )
-    print(cfg_non_terminals.detect_disappearing_non_terminals())
-    #print(cfg)
-    #print(cfg.remove_external_non_terminals())
+
+    cfg_simple_recursion = ContextFreeGrammar(
+        [TerminalSymbol("chr"), TerminalSymbol("ast")],
+        [NonTerminalSymbol("A"), NonTerminalSymbol("B")],
+        [
+            GrammarRule(NonTerminalSymbol("A"), [NonTerminalSymbol("A"), ]),
+            GrammarRule(NonTerminalSymbol("B"), [])
+        ],
+        NonTerminalSymbol("A"),
+    )
+
+    cfg_complex_recursion = ContextFreeGrammar(
+        [TerminalSymbol("chr"), TerminalSymbol("ast")],
+        [NonTerminalSymbol("A"), NonTerminalSymbol("B"), NonTerminalSymbol("S")],
+        [
+            GrammarRule(NonTerminalSymbol("S"), [NonTerminalSymbol("A"), NonTerminalSymbol("B")]),
+            GrammarRule(NonTerminalSymbol("B"), [NonTerminalSymbol("S"), ]),
+            GrammarRule(NonTerminalSymbol("A"), [NonTerminalSymbol("B")]),
+        ],
+        NonTerminalSymbol("S"),
+    )
+    d = cfg_complex_recursion.detect_left_recursion()
+    print(cfg_complex_recursion.detect_disappearing_non_terminals())
+    # print(cfg)
+    # print(cfg.remove_external_non_terminals())
