@@ -17,6 +17,15 @@ class NonTerminal(GrammarSymbol):
         super().__init__(name)
 
 
+class FromNonTerminal(NonTerminal):
+    def __init__(self, non_terminal: NonTerminal):
+        self.internal_terminal = non_terminal
+        super().__init__(f"{non_terminal.name}'")
+
+    def __eq__(self, other):
+        return type(other) is type(self) and self.internal_terminal == other.internal_terminal
+
+
 class Terminal(GrammarSymbol):
     def __init__(self, name):
         super().__init__(name)

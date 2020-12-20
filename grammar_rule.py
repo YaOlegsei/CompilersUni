@@ -15,6 +15,14 @@ class GrammarRule:
 
         return f"{self.left_symbol} ->{right_str}"
 
+    def __eq__(self, other):
+        return type(other) is type(self) \
+               and self.left_symbol == other.left_symbol \
+               and self.right_symbols == other.right_symbols
+
+    def __hash__(self):
+        return len(self.left_symbol.name) + len(self.right_symbols)
+
     def remove_disappearing_from_rule(self, disappearing: Sequence[NonTerminal]) -> List[GrammarRule]:
 
         def remove_disappearing_from_list(
@@ -51,12 +59,15 @@ class GrammarRule:
         def list_to_rule(symb_list) -> GrammarRule:
             return GrammarRule(self.left_symbol, symb_list)
 
-        return list(
-            map(
-                list_to_rule,
-                remove_disappearing_from_list(self.right_symbols),
+        if self.left_symbol in disappearing:
+            return list()
+        else:
+            return list(
+                map(
+                    list_to_rule,
+                    remove_disappearing_from_list(self.right_symbols),
+                )
             )
-        )
 
 
 if __name__ == "__main__":

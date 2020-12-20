@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Set, Dict, List, Sequence, Optional
 from collections import defaultdict
-from grammar_symbol import NonTerminal,Terminal
+from grammar_symbol import NonTerminal, Terminal, FromNonTerminal
 from grammar_rule import GrammarRule
 
 
@@ -158,6 +158,34 @@ class ContextFreeGrammar:
             return False
 
         return dfs(self.start_non_terminal)
+
+    def get_greibach_grammar(self) -> ContextFreeGrammar:
+        clean_grammar = self.remove_external_non_terminals()
+        disappearing = clean_grammar.detect_disappearing_non_terminals()
+
+        new_rules: Set[GrammarRule] = set(clean_grammar.rules)
+        new_start: NonTerminal = clean_grammar.start_non_terminal
+        new_non_terminals: Sequence[NonTerminal] = clean_grammar.non_terminals
+
+        if disappearing:
+            new_rules = set()
+            for rule in clean_grammar.rules:
+                new_rules \
+                    .update(rule.remove_disappearing_from_rule(disappearing))
+
+            if clean_grammar.start_non_terminal in disappearing:
+                new_start = FromNonTerminal(new_start)
+
+                new_rules.add(GrammarRule(new_start, []))
+                new_rules.add(GrammarRule(new_start, [clean_grammar.start_non_terminal]))
+                new_non_terminals = [new_start] + list(new_non_terminals)
+
+        return ContextFreeGrammar(
+            clean_grammar.terminals,
+            new_non_terminals,
+            list(new_rules),
+            new_start,
+        )
 
 
 if __name__ == "__main__":
