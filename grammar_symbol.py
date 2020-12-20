@@ -25,6 +25,9 @@ class FromNonTerminal(NonTerminal):
     def __eq__(self, other):
         return type(other) is type(self) and self.internal_terminal == other.internal_terminal
 
+    def __hash__(self):
+        return len(self.name)
+
 
 class Terminal(GrammarSymbol):
     def __init__(self, name):

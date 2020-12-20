@@ -27,9 +27,9 @@ class ContextFreeGrammar:
     def __get_new_alives__(self, alives: Set[NonTerminal]) -> List[NonTerminal]:
         new_alives: List[NonTerminal] = list()
 
-        available_rules = filter(lambda rule:
-                                 rule.left_symbol not in alives and rule.right_symbols,
-                                 self.rules, )
+        available_rules = list(filter(lambda rule:
+                                      rule.left_symbol not in alives,
+                                      self.rules, ))
 
         for rule in available_rules:
             not_alive_symbols = list(
@@ -98,14 +98,15 @@ class ContextFreeGrammar:
         return f"{terminals}\n{non_terminals}\n{rules}"
 
     def remove_external_non_terminals(self):
-        return ContextFreeGrammar \
-            .__get_alive_only_grammar__(self) \
+        return self \
+            .__get_alive_only_grammar__() \
             .__get_reachable_only_grammar__()
 
     def __get_new_disappearing__(self, disappearing: Set[NonTerminal]) -> List[NonTerminal]:
         new_disappearing: Set[NonTerminal] = set()
         for rule in self.rules:
-            if rule.left_symbol in disappearing: continue
+            if rule.left_symbol in disappearing:
+                continue
             not_disappearing_symbols = list(filter(lambda symbol: symbol not in disappearing, rule.right_symbols))
             if not not_disappearing_symbols: new_disappearing.add(rule.left_symbol)
 
@@ -117,7 +118,8 @@ class ContextFreeGrammar:
         while True:
             new_disappearing = self.__get_new_disappearing__(disappearing)
 
-            if not new_disappearing: break
+            if not new_disappearing:
+                break
 
             disappearing.update(new_disappearing)
 
@@ -144,7 +146,8 @@ class ContextFreeGrammar:
         def dfs(cur_symb: NonTerminal) -> bool:
 
             has_entered = enter_dict[cur_symb]
-            if has_entered: return True
+            if has_entered:
+                return True
 
             enter_dict[cur_symb] = True
 
@@ -159,7 +162,7 @@ class ContextFreeGrammar:
 
         return dfs(self.start_non_terminal)
 
-    def get_greibach_grammar(self) -> ContextFreeGrammar:
+    def transform_to_greibach_form(self) -> ContextFreeGrammar:
         clean_grammar = self.remove_external_non_terminals()
         disappearing = clean_grammar.detect_disappearing_non_terminals()
 
@@ -186,6 +189,128 @@ class ContextFreeGrammar:
             list(new_rules),
             new_start,
         )
+
+    def __remove_direct_left_recursion__(self, symbol: NonTerminal) -> ContextFreeGrammar:
+        symbol_rules = self.rules_dict[symbol]
+
+        no_direct_recursion = list(
+            filter(
+                lambda rule: rule.right_symbols[0] != symbol,
+                symbol_rules,
+            )
+        )
+
+        has_direct_recursion = list(
+            filter(
+                lambda rule: rule.right_symbols[0] == symbol,
+                symbol_rules,
+            )
+        )
+        if not has_direct_recursion:
+            return self
+        new_symbol = FromNonTerminal(symbol)
+
+        new_symbol_rules: List[GrammarRule] = list()
+        for rule in has_direct_recursion:
+            new_symbol_rules += [GrammarRule(new_symbol, rule.right_symbols[1:] + [new_symbol])]
+            new_symbol_rules += [GrammarRule(new_symbol, rule.right_symbols[1:])]
+
+        old_symbol_rules = list(
+            map(
+                lambda rule:
+                GrammarRule(symbol, rule.right_symbols + [new_symbol]),
+                no_direct_recursion,
+            )
+        )
+
+        old_rules = list(
+            filter(
+                lambda rule: rule.left_symbol != symbol,
+                self.rules,
+            )
+        )
+
+        return ContextFreeGrammar(
+            self.terminals,
+            list(self.non_terminals) + [new_symbol],
+            old_rules + new_symbol_rules + old_symbol_rules,
+            self.start_non_terminal
+        )
+
+    def __remove_indirect_recursion_for__(self,
+                                          lower_symbol: NonTerminal,
+                                          greater_symbol: NonTerminal,
+                                          ) -> ContextFreeGrammar:
+        starts_with_lower = list(
+            filter(
+                lambda rule: rule.right_symbols and rule.right_symbols[0] == lower_symbol,
+                self.rules_dict[greater_symbol],
+            )
+        )
+
+        new_rules_for_greater: Set[GrammarRule] = set(
+            filter(
+                lambda rule: rule.right_symbols[0] != lower_symbol,
+                self.rules_dict[greater_symbol],
+            )
+        )
+
+        for rule_with_lower in starts_with_lower:
+            new_rules_for_greater.update(list(
+                map(
+                    lambda rule_for_lower:
+                    GrammarRule(greater_symbol, rule_for_lower.right_symbols + rule_with_lower.right_symbols[1:]),
+                    self.rules_dict[lower_symbol],
+                )
+            ))
+
+        old_rules = set(
+            filter(
+                lambda rule: rule.left_symbol != greater_symbol,
+                self.rules,
+            )
+        )
+
+        new_rules = old_rules
+
+        new_rules.update(new_rules_for_greater)
+
+        return ContextFreeGrammar(
+            self.terminals,
+            self.non_terminals,
+            list(new_rules),
+            self.start_non_terminal,
+        )
+
+    def remove_left_recursion(self) -> ContextFreeGrammar:
+        current_grammar = self.transform_to_greibach_form()
+
+        if not current_grammar.detect_left_recursion():
+            return current_grammar
+
+        ordered_non_terminals = \
+            [current_grammar.start_non_terminal] + \
+            list(
+                filter(
+                    lambda symbol: symbol != current_grammar.start_non_terminal,
+                    current_grammar.non_terminals,
+                )
+            )
+
+        ordered_non_terminals.reverse()
+
+        for i in range(len(ordered_non_terminals)):
+            greater_symbol = ordered_non_terminals[i]
+
+            for j in range(i):
+                lower_symbol = ordered_non_terminals[j]
+                current_grammar = \
+                    current_grammar.__remove_indirect_recursion_for__(lower_symbol, greater_symbol)
+
+            current_grammar = \
+                current_grammar.__remove_direct_left_recursion__(greater_symbol)
+
+        return current_grammar
 
 
 if __name__ == "__main__":
@@ -219,15 +344,45 @@ if __name__ == "__main__":
 
     cfg_complex_recursion = ContextFreeGrammar(
         [Terminal("chr"), Terminal("ast")],
-        [NonTerminal("A"), NonTerminal("B"), NonTerminal("S")],
+        [NonTerminal("S"), NonTerminal("A"), ],
         [
             GrammarRule(NonTerminal("S"), [NonTerminal("A"), NonTerminal("B")]),
-            GrammarRule(NonTerminal("B"), [NonTerminal("S"), ]),
+            GrammarRule(NonTerminal("B"), [NonTerminal("S")]),
             GrammarRule(NonTerminal("A"), [NonTerminal("B")]),
         ],
         NonTerminal("S"),
     )
-    has_left_recursion = cfg.detect_left_recursion()
-    print(f"has left recursion: {has_left_recursion}")
+
+    cfg_not_greibach = ContextFreeGrammar(
+        [Terminal("a"), Terminal("b")],
+        [NonTerminal("S"), NonTerminal("B"), NonTerminal("A")],
+        [
+            GrammarRule(NonTerminal("S"), [NonTerminal("A"), NonTerminal("B")]),
+            GrammarRule(NonTerminal("B"), []),
+            GrammarRule(NonTerminal("B"), [Terminal("b"), NonTerminal("B")]),
+            GrammarRule(NonTerminal("A"), []),
+            GrammarRule(NonTerminal("A"), [Terminal("a"), NonTerminal("A")]),
+        ],
+        NonTerminal("S"),
+    )
+
+    cfg_left_recursion = ContextFreeGrammar(
+        [Terminal("a"), Terminal("b"), Terminal("g")],
+        [NonTerminal("S"), NonTerminal("B"), NonTerminal("A")],
+        [
+            GrammarRule(NonTerminal("A"), [NonTerminal("S"), Terminal("a")]),
+            GrammarRule(NonTerminal("S"), [NonTerminal("S"), Terminal("b")]),
+            GrammarRule(NonTerminal("S"), [NonTerminal("A"), Terminal("g")]),
+            GrammarRule(NonTerminal("S"), [Terminal("b")]),
+        ],
+        NonTerminal("S"),
+    )
+    # print(cfg_not_greibach.transform_to_greibach_form())
+    # print(cfg_left_recursion.transform_to_greibach_form())
+    print("*****")
+    print(cfg_left_recursion.remove_left_recursion())
+
+    # has_left_recursion = cfg.detect_left_recursion()
+    # print(f"has left recursion: {has_left_recursion}")
     # print(cfg)
     # print(cfg.remove_external_non_terminals())

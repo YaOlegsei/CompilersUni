@@ -59,13 +59,21 @@ class GrammarRule:
         def list_to_rule(symb_list) -> GrammarRule:
             return GrammarRule(self.left_symbol, symb_list)
 
-        if self.left_symbol in disappearing:
+        def no_epsilon_rules(rule: GrammarRule) -> bool:
+            return len(rule.right_symbols) > 0
+
+        if not self.right_symbols:
             return list()
         else:
             return list(
-                map(
-                    list_to_rule,
-                    remove_disappearing_from_list(self.right_symbols),
+                filter(
+                    no_epsilon_rules,
+                    list(
+                        map(
+                            list_to_rule,
+                            remove_disappearing_from_list(self.right_symbols),
+                        )
+                    )
                 )
             )
 
@@ -74,11 +82,12 @@ if __name__ == "__main__":
     rule = GrammarRule(
         NonTerminal("A"),
         [NonTerminal("B"),
-         Terminal("ast"),
          NonTerminal("C"),
-         NonTerminal("V")]
+         ]
     )
 
-    new_rules = rule.remove_disappearing_from_rule([NonTerminal("C"), NonTerminal("B")])
+    #new_rules = rule.remove_disappearing_from_rule([NonTerminal("C"), NonTerminal("B")])
 
-    print(new_rules)
+    d= [12,2,2,2,2,2]
+    print(d[1:])
+    #print(new_rules)
