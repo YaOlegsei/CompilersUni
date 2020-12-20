@@ -123,7 +123,7 @@ class ContextFreeGrammar:
 
         return list(disappearing)
 
-    def __detect_if_in_cycle__(self, symb: NonTerminal) -> bool:
+    def detect_left_recursion(self) -> bool:
 
         disappearing: List[NonTerminal] = self.detect_disappearing_non_terminals()
 
@@ -141,31 +141,23 @@ class ContextFreeGrammar:
 
         enter_dict: Dict[NonTerminal, bool] = defaultdict(lambda: False)
 
-        def dfs(cur_symb: NonTerminal) -> Optional[NonTerminal]:
+        def dfs(cur_symb: NonTerminal) -> bool:
 
             has_entered = enter_dict[cur_symb]
-            if has_entered: return cur_symb
+            if has_entered: return True
 
             enter_dict[cur_symb] = True
 
             for rule in self.rules_dict[cur_symb]:
                 for next_symb in find_most_left_non_terminals(rule):
-                    if symb == dfs(next_symb):
+                    if dfs(next_symb):
                         enter_dict[cur_symb] = False
-                        return symb
+                        return True
 
             enter_dict[cur_symb] = False
-            return None
+            return False
 
-        return dfs(symb) == symb
-
-    def detect_left_recursion(self) -> List[NonTerminal]:
-        return list(
-            filter(
-                lambda non_terminal: self.__detect_if_in_cycle__(non_terminal),
-                self.non_terminals,
-            )
-        )
+        return dfs(self.start_non_terminal)
 
 
 if __name__ == "__main__":
@@ -207,7 +199,7 @@ if __name__ == "__main__":
         ],
         NonTerminal("S"),
     )
-    d = cfg_complex_recursion.detect_left_recursion()
-    print(cfg_complex_recursion.detect_disappearing_non_terminals())
+    has_left_recursion = cfg.detect_left_recursion()
+    print(f"has left recursion: {has_left_recursion}")
     # print(cfg)
     # print(cfg.remove_external_non_terminals())
