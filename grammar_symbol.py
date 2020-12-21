@@ -18,15 +18,10 @@ class NonTerminal(GrammarSymbol):
 
 
 class FromNonTerminal(NonTerminal):
-    def __init__(self, non_terminal: NonTerminal):
+    def __init__(self, non_terminal: NonTerminal, additional_symbol: str = "'"):
         self.internal_terminal = non_terminal
-        super().__init__(f"{non_terminal.name}'")
-
-    def __eq__(self, other):
-        return type(other) is type(self) and self.internal_terminal == other.internal_terminal
-
-    def __hash__(self):
-        return len(self.name)
+        self.additional_symbol = additional_symbol
+        super().__init__(f"{non_terminal.name}({additional_symbol})")
 
 
 class Terminal(GrammarSymbol):

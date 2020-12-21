@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Set, Dict, List, Sequence, Optional
 from collections import defaultdict
-from grammar_symbol import NonTerminal, Terminal, FromNonTerminal
+from grammar_symbol import NonTerminal, Terminal, FromNonTerminal, GrammarSymbol
 from grammar_rule import GrammarRule
 
 
@@ -91,7 +91,7 @@ class ContextFreeGrammar:
         for non_terminal in self.non_terminals:
             non_terminals += f" {non_terminal}"
 
-        rules = "Rules: "
+        rules = "Rules: \n"
         for rule in self.rules:
             rules += f"  {rule} \n"
 
@@ -108,7 +108,8 @@ class ContextFreeGrammar:
             if rule.left_symbol in disappearing:
                 continue
             not_disappearing_symbols = list(filter(lambda symbol: symbol not in disappearing, rule.right_symbols))
-            if not not_disappearing_symbols: new_disappearing.add(rule.left_symbol)
+            if not not_disappearing_symbols:
+                new_disappearing.add(rule.left_symbol)
 
         return list(new_disappearing)
 
@@ -131,12 +132,12 @@ class ContextFreeGrammar:
 
         def find_most_left_non_terminals(rule: GrammarRule) -> List[NonTerminal]:
             left_non_terminals: Set[NonTerminal] = set()
-            for symb in rule.right_symbols:
-                if symb in disappearing:
-                    left_non_terminals.add(symb)
+            for symbol in rule.right_symbols:
+                if symbol in disappearing:
+                    left_non_terminals.add(symbol)
                     continue
-                if isinstance(symb, NonTerminal):
-                    left_non_terminals.add(symb)
+                if isinstance(symbol, NonTerminal):
+                    left_non_terminals.add(symbol)
                 break
 
             return list(left_non_terminals)
@@ -310,6 +311,62 @@ class ContextFreeGrammar:
 
         return current_grammar
 
+    def factorize_grammar(self) -> ContextFreeGrammar:
+        clean_grammar = self#.remove_left_recursion()
+
+        factorization_set: Set[NonTerminal] = set(clean_grammar.non_terminals)
+
+        rules_dict: Dict[NonTerminal, List[GrammarRule]] = dict(clean_grammar.rules_dict)
+
+        new_rules: Set[GrammarRule] = set()
+        new_symbols: List[NonTerminal] = list(clean_grammar.non_terminals)
+        additional_symbols_count = 0
+
+        def is_only_terminals(rule: GrammarRule) -> bool:
+            for symbol in rule.right_symbols:
+                if not isinstance(symbol, Terminal):
+                    return False
+
+            return True
+
+        while factorization_set:
+            first_symb_dict: Dict[GrammarSymbol, List[GrammarRule]] = defaultdict(list)
+            current_symbol = factorization_set.pop()
+            rules_for_current = rules_dict[current_symbol]
+
+            for rule in rules_for_current:
+                if is_only_terminals(rule):
+                    new_rules.add(rule)
+                    continue
+
+                first_symb_dict[rule.right_symbols[0]].append(rule)
+
+            for start_symbol, rules_for_symb in first_symb_dict.items():
+
+                if len(rules_for_symb) > 2:
+                    new_symb = FromNonTerminal(current_symbol, f"{additional_symbols_count}")
+
+                    rules_dict[new_symb] = list(
+                        map(
+                            lambda rule: GrammarRule(new_symb, rule.right_symbols[1:]),
+                            rules_for_symb,
+                        )
+                    )
+
+                    new_rules.add(GrammarRule(current_symbol, [start_symbol, new_symb]))
+                    factorization_set.add(new_symb)
+                    additional_symbols_count += 1
+                else:
+                    if rules_for_symb:
+                        new_rules.update(rules_for_symb)
+
+        return ContextFreeGrammar(
+            clean_grammar.terminals,
+            new_symbols,
+            list(new_rules),
+            clean_grammar.start_non_terminal,
+        )
+
 
 if __name__ == "__main__":
     cfg = ContextFreeGrammar(
@@ -375,10 +432,30 @@ if __name__ == "__main__":
         ],
         NonTerminal("S"),
     )
+
+    cfg_for_factorization = ContextFreeGrammar(
+        [Terminal("+"), Terminal("*"), Terminal("c"), Terminal("v"), Terminal("("), Terminal(")")],
+        [NonTerminal("S"), NonTerminal("T"), NonTerminal("F")],
+        [
+            GrammarRule(NonTerminal("S"), [NonTerminal("S"), Terminal("+"), NonTerminal("S")]),
+            GrammarRule(NonTerminal("S"), [NonTerminal("T")]),
+            GrammarRule(NonTerminal("T"), [NonTerminal("T"), Terminal("*"), NonTerminal("T")]),
+            GrammarRule(NonTerminal("T"), [NonTerminal("F")]),
+            GrammarRule(NonTerminal("F"), [Terminal("c")]),
+            GrammarRule(NonTerminal("F"), [Terminal("v")]),
+            GrammarRule(NonTerminal("F"), [Terminal("("), NonTerminal("S"), Terminal(")")]),
+        ],
+        NonTerminal("S")
+    )
+
     # print(cfg_not_greibach.transform_to_greibach_form())
     # print(cfg_left_recursion.transform_to_greibach_form())
-    print("*****")
+    """print("*****")
     print(cfg_left_recursion.remove_left_recursion())
+    print("*****")
+    print(cfg_left_recursion.factorize_grammar())
+    print("*****")"""
+    print(cfg_for_factorization.factorize_grammar())
 
     # has_left_recursion = cfg.detect_left_recursion()
     # print(f"has left recursion: {has_left_recursion}")
