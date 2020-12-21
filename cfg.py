@@ -213,7 +213,7 @@ class ContextFreeGrammar:
         new_symbol_rules: List[GrammarRule] = list()
         for rule in has_direct_recursion:
             new_symbol_rules += [GrammarRule(new_symbol, rule.right_symbols[1:] + [new_symbol])]
-            new_symbol_rules += [GrammarRule(new_symbol, rule.right_symbols[1:])]
+            new_symbol_rules += [GrammarRule(new_symbol,[])]
 
         old_symbol_rules = list(
             map(
@@ -296,8 +296,6 @@ class ContextFreeGrammar:
                     current_grammar.non_terminals,
                 )
             )
-
-        ordered_non_terminals.reverse()
 
         for i in range(len(ordered_non_terminals)):
             greater_symbol = ordered_non_terminals[i]
