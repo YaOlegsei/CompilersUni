@@ -343,7 +343,7 @@ class ContextFreeGrammar:
 
             for start_symbol, rules_for_symb in first_symb_dict.items():
 
-                if len(rules_for_symb) > 2:
+                if len(rules_for_symb) > 1:
                     new_symb = FromNonTerminal(current_symbol, f"{additional_symbols_count}")
 
                     rules_dict[new_symb] = list(
@@ -352,7 +352,7 @@ class ContextFreeGrammar:
                             rules_for_symb,
                         )
                     )
-
+                    new_symbols.append(new_symb)
                     new_rules.add(GrammarRule(current_symbol, [start_symbol, new_symb]))
                     factorization_set.add(new_symb)
                     additional_symbols_count += 1
@@ -434,18 +434,17 @@ if __name__ == "__main__":
     )
 
     cfg_for_factorization = ContextFreeGrammar(
-        [Terminal("+"), Terminal("*"), Terminal("c"), Terminal("v"), Terminal("("), Terminal(")")],
-        [NonTerminal("S"), NonTerminal("T"), NonTerminal("F")],
+        [Terminal("+"), Terminal("*"), Terminal("n"), Terminal("("), Terminal(")")],
+        [NonTerminal("E"), NonTerminal("T"), NonTerminal("F")],
         [
-            GrammarRule(NonTerminal("S"), [NonTerminal("S"), Terminal("+"), NonTerminal("S")]),
-            GrammarRule(NonTerminal("S"), [NonTerminal("T")]),
-            GrammarRule(NonTerminal("T"), [NonTerminal("T"), Terminal("*"), NonTerminal("T")]),
+            GrammarRule(NonTerminal("E"), [NonTerminal("T"), Terminal("+"), NonTerminal("E")]),
+            GrammarRule(NonTerminal("E"), [NonTerminal("T")]),
+            GrammarRule(NonTerminal("T"), [NonTerminal("F"), Terminal("*"), NonTerminal("T")]),
             GrammarRule(NonTerminal("T"), [NonTerminal("F")]),
-            GrammarRule(NonTerminal("F"), [Terminal("c")]),
-            GrammarRule(NonTerminal("F"), [Terminal("v")]),
-            GrammarRule(NonTerminal("F"), [Terminal("("), NonTerminal("S"), Terminal(")")]),
+            GrammarRule(NonTerminal("F"), [Terminal("n")]),
+            GrammarRule(NonTerminal("F"), [Terminal("("), NonTerminal("E"), Terminal(")")]),
         ],
-        NonTerminal("S")
+        NonTerminal("E")
     )
 
     # print(cfg_not_greibach.transform_to_greibach_form())
