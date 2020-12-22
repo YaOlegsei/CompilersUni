@@ -108,7 +108,8 @@ class Parser:
 
     def is_in_language_with_first_follows(self, word: Sequence[str]) -> bool:
         word_queue = ["$"] + list(reversed(word))
-        def get_cur_token()->str:
+
+        def get_cur_token() -> str:
             return word_queue[len(word_queue) - 1]
 
         def on_next_token(current_symbol) -> bool:

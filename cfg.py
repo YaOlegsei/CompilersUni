@@ -41,7 +41,7 @@ class ContextFreeGrammar:
 
         return new_alives
 
-    def __get_alive_only_grammar__(self) :
+    def __get_alive_only_grammar__(self):
         alives: Set[NonTerminal] = set()
 
         while True:
@@ -60,7 +60,7 @@ class ContextFreeGrammar:
                                   self.start_non_terminal,
                                   )
 
-    def __get_reachable_only_grammar__(self) :
+    def __get_reachable_only_grammar__(self):
         reachables: Set[NonTerminal] = {self.start_non_terminal}
 
         reachable_rules = self.rules_dict[self.start_non_terminal]
@@ -90,11 +90,13 @@ class ContextFreeGrammar:
         for non_terminal in self.non_terminals:
             non_terminals += f" {non_terminal}"
 
+        start_non_terminal = f"Start non-terminal: {self.start_non_terminal}"
+
         rules = "Rules: \n"
         for rule in self.rules:
             rules += f"  {rule} \n"
 
-        return f"{terminals}\n{non_terminals}\n{rules}"
+        return f"{terminals}\n{non_terminals}\n{start_non_terminal}\n{rules}"
 
     def remove_external_non_terminals(self):
         return self \
@@ -162,7 +164,7 @@ class ContextFreeGrammar:
 
         return dfs(self.start_non_terminal)
 
-    def transform_to_greibach_form(self) :
+    def transform_to_greibach_form(self):
         clean_grammar = self
         disappearing = clean_grammar.detect_disappearing_non_terminals()
 
@@ -177,7 +179,7 @@ class ContextFreeGrammar:
                     .update(rule.remove_disappearing_from_rule(disappearing))
 
             if clean_grammar.start_non_terminal in disappearing:
-                new_start = FromNonTerminal(new_start)
+                new_start = FromNonTerminal(new_start, str(len(clean_grammar.non_terminals)))
 
                 new_rules.add(GrammarRule(new_start, []))
                 new_rules.add(GrammarRule(new_start, [clean_grammar.start_non_terminal]))
@@ -190,7 +192,7 @@ class ContextFreeGrammar:
             new_start,
         )
 
-    def __remove_direct_left_recursion__(self, symbol: NonTerminal) :
+    def __remove_direct_left_recursion__(self, symbol: NonTerminal):
         symbol_rules = self.rules_dict[symbol]
 
         no_direct_recursion = list(
@@ -208,7 +210,7 @@ class ContextFreeGrammar:
         )
         if not has_direct_recursion:
             return self
-        new_symbol = FromNonTerminal(symbol)
+        new_symbol = FromNonTerminal(symbol, str(len(self.non_terminals)))
 
         new_symbol_rules: List[GrammarRule] = list()
         for rule in has_direct_recursion:
@@ -240,7 +242,7 @@ class ContextFreeGrammar:
     def __remove_indirect_recursion_for__(self,
                                           lower_symbol: NonTerminal,
                                           greater_symbol: NonTerminal,
-                                          ) :
+                                          ):
         starts_with_lower = list(
             filter(
                 lambda rule: rule.right_symbols and rule.right_symbols[0] == lower_symbol,
@@ -282,7 +284,7 @@ class ContextFreeGrammar:
             self.start_non_terminal,
         )
 
-    def remove_left_recursion(self) :
+    def remove_left_recursion(self):
         current_grammar = self
 
         if not current_grammar.detect_left_recursion():
@@ -310,7 +312,7 @@ class ContextFreeGrammar:
 
         return current_grammar
 
-    def factorize_grammar(self) :
+    def factorize_grammar(self):
         clean_grammar = self
 
         factorization_set: Set[NonTerminal] = set(clean_grammar.non_terminals)
@@ -319,7 +321,7 @@ class ContextFreeGrammar:
 
         new_rules: Set[GrammarRule] = set()
         new_symbols: List[NonTerminal] = list(clean_grammar.non_terminals)
-        additional_symbols_count = 0
+        additional_symbols_count = len(clean_grammar.non_terminals)
 
         def is_only_terminals(rule: GrammarRule) -> bool:
             for symbol in rule.right_symbols:
@@ -334,7 +336,7 @@ class ContextFreeGrammar:
             rules_for_current = rules_dict[current_symbol]
 
             for rule in rules_for_current:
-                if is_only_terminals(rule):
+                if is_only_terminals(rule) or len(rule.right_symbols) == 1:
                     new_rules.add(rule)
                     continue
 
@@ -353,6 +355,7 @@ class ContextFreeGrammar:
                     )
                     new_symbols.append(new_symb)
                     new_rules.add(GrammarRule(current_symbol, [start_symbol, new_symb]))
+
                     factorization_set.add(new_symb)
                     additional_symbols_count += 1
                 else:

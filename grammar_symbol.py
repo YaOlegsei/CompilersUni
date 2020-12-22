@@ -18,7 +18,7 @@ class NonTerminal(GrammarSymbol):
 
 
 class FromNonTerminal(NonTerminal):
-    def __init__(self, non_terminal: NonTerminal, additional_symbol: str = "'"):
+    def __init__(self, non_terminal: NonTerminal, additional_symbol: str):
         self.internal_terminal = non_terminal
         self.additional_symbol = additional_symbol
         super().__init__(f"{non_terminal.name}({additional_symbol})")
