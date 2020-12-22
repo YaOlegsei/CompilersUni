@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import Set, Dict, List, Sequence
 from collections import defaultdict
 from grammar_symbol import NonTerminal, Terminal, FromNonTerminal, GrammarSymbol
@@ -42,7 +41,7 @@ class ContextFreeGrammar:
 
         return new_alives
 
-    def __get_alive_only_grammar__(self) -> ContextFreeGrammar:
+    def __get_alive_only_grammar__(self) :
         alives: Set[NonTerminal] = set()
 
         while True:
@@ -61,7 +60,7 @@ class ContextFreeGrammar:
                                   self.start_non_terminal,
                                   )
 
-    def __get_reachable_only_grammar__(self) -> ContextFreeGrammar:
+    def __get_reachable_only_grammar__(self) :
         reachables: Set[NonTerminal] = {self.start_non_terminal}
 
         reachable_rules = self.rules_dict[self.start_non_terminal]
@@ -163,7 +162,7 @@ class ContextFreeGrammar:
 
         return dfs(self.start_non_terminal)
 
-    def transform_to_greibach_form(self) -> ContextFreeGrammar:
+    def transform_to_greibach_form(self) :
         clean_grammar = self
         disappearing = clean_grammar.detect_disappearing_non_terminals()
 
@@ -191,7 +190,7 @@ class ContextFreeGrammar:
             new_start,
         )
 
-    def __remove_direct_left_recursion__(self, symbol: NonTerminal) -> ContextFreeGrammar:
+    def __remove_direct_left_recursion__(self, symbol: NonTerminal) :
         symbol_rules = self.rules_dict[symbol]
 
         no_direct_recursion = list(
@@ -241,7 +240,7 @@ class ContextFreeGrammar:
     def __remove_indirect_recursion_for__(self,
                                           lower_symbol: NonTerminal,
                                           greater_symbol: NonTerminal,
-                                          ) -> ContextFreeGrammar:
+                                          ) :
         starts_with_lower = list(
             filter(
                 lambda rule: rule.right_symbols and rule.right_symbols[0] == lower_symbol,
@@ -283,7 +282,7 @@ class ContextFreeGrammar:
             self.start_non_terminal,
         )
 
-    def remove_left_recursion(self) -> ContextFreeGrammar:
+    def remove_left_recursion(self) :
         current_grammar = self
 
         if not current_grammar.detect_left_recursion():
@@ -311,7 +310,7 @@ class ContextFreeGrammar:
 
         return current_grammar
 
-    def factorize_grammar(self) -> ContextFreeGrammar:
+    def factorize_grammar(self) :
         clean_grammar = self
 
         factorization_set: Set[NonTerminal] = set(clean_grammar.non_terminals)

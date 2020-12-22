@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import List, Sequence
 from grammar_symbol import GrammarSymbol, NonTerminal, Terminal
 
