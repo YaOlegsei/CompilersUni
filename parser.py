@@ -106,6 +106,33 @@ class Parser:
 
         return follows_dict
 
+    def is_in_language_with_first_follows(self, word: Sequence[str]) -> bool:
+        word_queue = ["$"] + list(reversed(word))
+        def get_cur_token()->str:
+            return word_queue[len(word_queue) - 1]
+
+        def on_next_token(current_symbol) -> bool:
+
+            for rule in self.grammar.rules_dict[current_symbol]:
+                if Terminal(get_cur_token()) in self.first(rule.right_symbols):
+                    for symbol in rule.right_symbols:
+                        if isinstance(symbol, Terminal):
+                            if symbol != Terminal(get_cur_token()):
+                                return False
+                            word_queue.pop()
+                        else:
+                            if not on_next_token(symbol):
+                                return False
+
+                    return True
+
+            if GrammarRule(current_symbol, []) in self.grammar.rules_dict[current_symbol] \
+                    and Terminal(get_cur_token()) in self.follows_dict[current_symbol]:
+                return True
+            return False
+
+        return on_next_token(self.grammar.start_non_terminal)
+
     def is_in_language(self, word: Sequence[str], cur_symbols=None) -> bool:
         if cur_symbols is None:
             cur_symbols = [self.grammar.start_non_terminal]
@@ -144,5 +171,10 @@ if __name__ == "__main__":
 
     parser = Parser(cfg_for_factorization)
 
+    print(parser.is_in_language_with_first_follows("n+(n+n)*n"))
+    print(parser.is_in_language_with_first_follows("n(n+n)*n"))
+    print(parser.is_in_language_with_first_follows("(n+n)"))
+
     print(parser.is_in_language("n+(n+n)*n"))
     print(parser.is_in_language("n(n+n)*n"))
+    print(parser.is_in_language("(n+n)"))
