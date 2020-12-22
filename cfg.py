@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Set, Dict, List, Sequence, Optional
+from typing import Set, Dict, List, Sequence
 from collections import defaultdict
 from grammar_symbol import NonTerminal, Terminal, FromNonTerminal, GrammarSymbol
 from grammar_rule import GrammarRule
@@ -164,7 +164,7 @@ class ContextFreeGrammar:
         return dfs(self.start_non_terminal)
 
     def transform_to_greibach_form(self) -> ContextFreeGrammar:
-        clean_grammar = self.remove_external_non_terminals()
+        clean_grammar = self
         disappearing = clean_grammar.detect_disappearing_non_terminals()
 
         new_rules: Set[GrammarRule] = set(clean_grammar.rules)
@@ -214,7 +214,7 @@ class ContextFreeGrammar:
         new_symbol_rules: List[GrammarRule] = list()
         for rule in has_direct_recursion:
             new_symbol_rules += [GrammarRule(new_symbol, rule.right_symbols[1:] + [new_symbol])]
-            new_symbol_rules += [GrammarRule(new_symbol,[])]
+            new_symbol_rules += [GrammarRule(new_symbol, [])]
 
         old_symbol_rules = list(
             map(
@@ -284,7 +284,7 @@ class ContextFreeGrammar:
         )
 
     def remove_left_recursion(self) -> ContextFreeGrammar:
-        current_grammar = self.transform_to_greibach_form()
+        current_grammar = self
 
         if not current_grammar.detect_left_recursion():
             return current_grammar
@@ -312,7 +312,7 @@ class ContextFreeGrammar:
         return current_grammar
 
     def factorize_grammar(self) -> ContextFreeGrammar:
-        clean_grammar = self#.remove_left_recursion()
+        clean_grammar = self
 
         factorization_set: Set[NonTerminal] = set(clean_grammar.non_terminals)
 

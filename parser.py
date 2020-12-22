@@ -57,6 +57,9 @@ class Parser:
             result += list(self.first_dict[symbol])
             has_epsilon_before = Parser.epsilon in self.first_dict[symbol]
 
+        if has_epsilon_before:
+            result.append(Parser.epsilon)
+
         return result
         # def parse(self,symbols:Sequence[str]):
 
@@ -103,6 +106,26 @@ class Parser:
 
         return follows_dict
 
+    def is_in_language(self, word: Sequence[str], cur_symbols=None) -> bool:
+        if cur_symbols is None:
+            cur_symbols = [self.grammar.start_non_terminal]
+
+        if not word:
+            disappearing = self.grammar.detect_disappearing_non_terminals()
+            return all(x in disappearing for x in cur_symbols)
+
+        if not cur_symbols:
+            return False
+
+        if cur_symbols[0] in self.grammar.terminals:
+            if Terminal(word[0]) == cur_symbols[0]:
+                return self.is_in_language(word[1:], cur_symbols[1:])
+            return False
+        for rule in self.grammar.rules_dict[cur_symbols[0]]:
+            if self.is_in_language(word, rule.right_symbols + cur_symbols[1:]):
+                return True
+        return False
+
 
 if __name__ == "__main__":
     cfg_for_factorization = ContextFreeGrammar(
@@ -121,4 +144,5 @@ if __name__ == "__main__":
 
     parser = Parser(cfg_for_factorization)
 
-    parser.first_dict
+    print(parser.is_in_language("n+(n+n)*n"))
+    print(parser.is_in_language("n(n+n)*n"))
