@@ -22,7 +22,7 @@ class GrammarRule:
     def __hash__(self):
         return len(self.left_symbol.name) + len(self.right_symbols)
 
-    def remove_disappearing_from_rule(self, disappearing: Sequence[NonTerminal]) -> List[GrammarRule]:
+    def remove_disappearing_from_rule(self, disappearing: Sequence[NonTerminal]) :
 
         def remove_disappearing_from_list(
                 right_symbols: List[GrammarSymbol],
